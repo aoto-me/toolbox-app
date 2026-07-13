@@ -1,0 +1,126 @@
+@use '../../../app/styles/variables' as v;
+@use '../../../app/styles/colors' as col;
+@use '../../../app/styles/card' as c;
+
+$line-inset-dark: 0px;
+$line-outer-corner-dark: c.$inner-corner - $line-inset-dark * c.$gap-factor;
+$line-inner-corner-dark: $line-outer-corner-dark - c.$line-width;
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+
+  @media (max-width: v.$bp-mobile) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+.item--wide {
+  grid-column: span 2;
+
+  @media (max-width: v.$bp-mobile) {
+    grid-column: span 1;
+  }
+}
+
+.item {
+  @include c.card-shadow;
+  transform: var(--dnd-transform, none);
+  transition: var(--dnd-transition, none);
+
+  &--dragging {
+    filter: drop-shadow(0px 10px 24px rgba(0, 0, 0, 0.2))
+      drop-shadow(0px 10px 10px rgba(0, 0, 0, 0.4));
+    transform: var(--dnd-transform, none) scale(1.03);
+    z-index: 10;
+    position: relative;
+  }
+
+  &__frame {
+    @include c.card-frame(c.$corner, c.$border);
+  }
+
+  &--dark &__frame {
+    background-image: url('/img/paper-navy-2.webp');
+  }
+
+  &__card {
+    @include c.card-inner(c.$inner-corner);
+  }
+
+  &--dark &__card {
+    background-color: transparent;
+    background-image: url('/img/paper-navy-2.webp');
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    background-position: (0 - c.$border) (0 - c.$border);
+  }
+
+  &__innerLine {
+    @include c.card-inner-line(
+      c.$line-inset,
+      c.$line-outer-corner,
+      c.$line-width,
+      c.$line-inner-corner
+    );
+  }
+
+  &--dark &__innerLine {
+    inset: $line-inset-dark;
+    @include c.octagon($line-outer-corner-dark);
+    background: col.$cream;
+
+    &::before {
+      @include c.octagon($line-inner-corner-dark);
+      background-image: url('/img/paper-navy-2.webp');
+      background-repeat: repeat;
+      background-size: 200px 200px;
+      background-position: (0 - c.$border - $line-inset-dark - c.$line-width)
+        (0 - c.$border - $line-inset-dark - c.$line-width);
+    }
+  }
+
+  &__header {
+    @include c.card-header;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__title {
+    @include c.card-title;
+  }
+
+  &--dark &__title {
+    color: col.$cream;
+  }
+
+  &__stars {
+    @include c.card-stars;
+  }
+
+  &__starsInner {
+    @include c.card-stars-inner;
+  }
+
+  &--dark &__stars {
+    &::before,
+    &::after {
+      background: col.$cream;
+    }
+  }
+
+  &__body {
+    @include c.card-body;
+  }
+
+  &--dark &__body {
+    color: col.$cream;
+  }
+}

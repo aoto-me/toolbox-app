@@ -1,0 +1,53 @@
+@use '../../../app/styles/colors' as col;
+
+.container {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: col.$cream;
+  border-left: 3px solid col.$error;
+  border-radius: 0px 4px 4px 0px;
+  box-shadow:
+    rgba(0, 0, 0, 0.25) 0px 10px 24px,
+    rgba(0, 0, 0, 0.25) 0px 8px 8px;
+  pointer-events: auto;
+  max-width: min(480px, calc(100vw - 48px));
+
+  &__message {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  &__close {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: col.$blue-gray-light;
+    border-radius: 3px;
+
+    @media (hover: hover) {
+      &:hover {
+        color: col.$blue-gray;
+      }
+    }
+  }
+}

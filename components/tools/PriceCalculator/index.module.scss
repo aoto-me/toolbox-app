@@ -1,0 +1,90 @@
+@use '../../../app/styles/colors' as col;
+@use '../../../app/styles/mixins' as m;
+
+.priceCalc {
+  &__tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: col.$light-blue;
+    border-radius: 5px;
+    padding: 4px;
+  }
+
+  &__tab {
+    flex: 1;
+    padding: 7px 12px 6px;
+    font-size: 13px;
+    line-height: 1.35;
+    font-weight: 600;
+    color: col.$blue-gray-light;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s;
+
+    @media (hover: hover) {
+      &:hover:not(#{&}--active) {
+        color: col.$navy;
+      }
+    }
+
+    &--active {
+      background: #fff;
+      color: col.$navy;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  &__inputRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  &__input {
+    flex: 1;
+    text-align: right;
+  }
+
+  &__unit {
+    font-size: 14px;
+    color: col.$blue-gray;
+    white-space: nowrap;
+  }
+
+  &__table {
+    @include m.table;
+    margin-top: 14px;
+  }
+
+  &__row {
+    @include m.row;
+    grid-template-columns: 90px 1fr;
+  }
+
+  &__label {
+    font-size: 13px;
+    color: col.$blue-gray;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  &__price {
+    font-size: 15px;
+    font-weight: 700;
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  &__sub {
+    font-size: 12px;
+    font-weight: 400;
+    color: col.$blue-gray-light;
+    white-space: nowrap;
+  }
+}

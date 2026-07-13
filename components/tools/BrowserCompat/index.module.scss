@@ -1,0 +1,200 @@
+@use '../../../app/styles/colors' as col;
+@use '../../../app/styles/mixins' as m;
+
+.browserCompat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__searchWrapper {
+    position: relative;
+  }
+
+  &__input {
+    padding-right: 32px;
+  }
+
+  &__clearButton {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: col.$blue-gray-light;
+    border-radius: 50%;
+
+    @media (hover: hover) {
+      &:hover {
+        color: col.$blue-gray;
+      }
+    }
+  }
+
+  &__dropdown {
+    position: fixed;
+    top: var(--compat-top);
+    left: var(--compat-left);
+    width: var(--compat-width);
+    background: col.$cream;
+    border: 1px solid col.$bg-gray;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    z-index: 1000;
+    max-height: var(--compat-max-height, 260px);
+    overflow-y: auto;
+  }
+
+  &__dropdownItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px;
+    cursor: pointer;
+    gap: 8px;
+
+    &:focus {
+      background: col.$light-blue;
+      outline: none;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: col.$light-blue;
+      }
+    }
+  }
+
+  &__dropdownKey {
+    font-size: 13px;
+    line-height: 1.35;
+    word-break: break-all;
+  }
+
+  &__dropdownCategory {
+    font-size: 11px;
+    font-weight: 600;
+    color: col.$navy;
+    background: col.$light-blue;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  &__message {
+    font-size: 13px;
+    color: col.$blue-gray;
+    margin: 0;
+
+    &--error {
+      color: col.$error;
+    }
+  }
+
+  &__result {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__resultHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__resultKey {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-all;
+  }
+
+  &__mdnLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    border: solid 1px;
+    border-color: col.$navy;
+    font-weight: 600;
+    color: col.$navy;
+    text-decoration: none;
+    background: transparent;
+    padding: 7px 6px 6px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    line-height: 1;
+
+    @media (hover: hover) {
+      &:hover {
+        background: col.$light-blue;
+      }
+    }
+
+    &:focus-visible {
+      background: col.$light-blue;
+    }
+  }
+
+  &__mdnLinkIcon {
+    flex-shrink: 0;
+    margin-top: -1px;
+  }
+
+  &__table {
+    @include m.table;
+  }
+
+  &__row {
+    @include m.row;
+    grid-template-columns: 140px 1fr;
+  }
+
+  &__browserName {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: col.$blue-gray;
+    line-height: 1.35;
+  }
+
+  &__browserIcon {
+    flex-shrink: 0;
+    color: col.$navy;
+    margin-top: -1px;
+    margin-right: 2px;
+  }
+
+  &__unsupportedIcon {
+    color: col.$error;
+  }
+
+  &__supportText {
+    font-size: 13px;
+    line-height: 1.4;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__iphoneLabel {
+    align-self: flex-start;
+    font-size: 11px;
+    color: col.$blue-gray;
+    padding: 3px 6px;
+    background: #ffffff;
+    border-radius: 3px;
+    margin-top: 1px;
+    line-height: 1.35;
+  }
+}

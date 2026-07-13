@@ -1,0 +1,36 @@
+{
+  "name": "toolbox-app",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code --prefix /home/node/.npm-global && echo 'export PATH=/home/node/.npm-global/bin:$PATH' >> /home/node/.bashrc && git config --global user.name \"$GIT_USER_NAME\" && git config --global user.email \"$GIT_USER_EMAIL\" && git config --global init.defaultbranch main && git config --global core.autocrlf input && npx playwright install chromium && DATABASE_URL=postgresql://testuser:testpassword@db-test:5432/toolbox_test npx tsx db/migrate.ts && npm run test:e2e:seed",
+  "remoteEnv": {
+    "PATH": "/home/node/.npm-global/bin:${containerEnv:PATH}",
+    "GIT_USER_NAME": "${localEnv:GIT_USER_NAME}",
+    "GIT_USER_EMAIL": "${localEnv:GIT_USER_EMAIL}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-playwright.playwright"]
+    }
+  },
+  "forwardPorts": [3000, 5432],
+  "portsAttributes": {
+    "9323": {
+      "label": "Playwright Report",
+      "onAutoForward": "silent"
+    }
+  },
+  "mounts": ["source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind,readonly"],
+  "remoteUser": "node"
+}

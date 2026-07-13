@@ -1,0 +1,59 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+# RDS用CA証明書バンドルは秘密鍵ではなく公開情報のため追跡対象にする
+!certs/*.pem
+*:Zone.Identifier
+.trash/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# Claude Code user-specific settings
+.claude/settings.local.json
+.claude/statusline-command.sh
+.claude/user-profile.md
+
+# Claude Code skills (downloaded from external repos, tracked by skills-lock.json)
+.agents/skills/
+.claude/skills/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# フック自己診断の状態(マシンローカル)
+.claude/hook-selfcheck-state.local.json

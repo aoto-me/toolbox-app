@@ -1,0 +1,72 @@
+@use '../../../app/styles/colors' as col;
+@use '../../../app/styles/card' as c;
+@use '../../../app/styles/mixins' as m;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.dialog {
+  @include c.card-shadow;
+  width: 100%;
+  max-width: 320px;
+
+  &__frame {
+    @include c.card-frame(c.$corner, c.$border);
+  }
+
+  &__inner {
+    @include c.card-inner(c.$inner-corner);
+  }
+
+  &__innerLine {
+    @include c.card-inner-line(
+      c.$line-inset,
+      c.$line-outer-corner,
+      c.$line-width,
+      c.$line-inner-corner
+    );
+  }
+
+  &__header {
+    @include c.card-header;
+  }
+
+  &__title {
+    @include c.card-title;
+  }
+
+  &__stars {
+    @include c.card-stars;
+  }
+
+  &__starsInner {
+    @include c.card-stars-inner;
+  }
+
+  &__body {
+    @include c.card-body;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  &__message {
+    margin: 0;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  &__button {
+    @include m.paper-button('/img/paper-navy-1.webp');
+  }
+}

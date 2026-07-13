@@ -1,0 +1,89 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspace/.claude/hooks/session-selfcheck.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspace/.claude/hooks/post-edit-lint.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspace/.claude/hooks/confirm-webfetch.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspace/.claude/hooks/bash-guard.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "security-guidance@claude-plugins-official": true
+  },
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Write(**/.env)",
+      "Edit(**/.env)",
+      "Read(**/.env.*)",
+      "Write(**/.env.*)",
+      "Edit(**/.env.*)",
+      "Read(**/*.pem)",
+      "Write(**/*.pem)",
+      "Read(**/*.key)",
+      "Write(**/*.key)",
+      "Read(**/*.p12)",
+      "Write(**/*.p12)",
+      "Read(**/secrets/**)",
+      "Write(**/secrets/**)",
+      "Read(**/credentials/**)",
+      "Write(**/credentials/**)",
+      "Read(/home/node/.ssh/**)",
+      "Bash(cat /home/node/.ssh/*)",
+      "Bash(cat ~/.ssh/*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard*)",
+      "Bash(rm -rf /*)",
+      "Bash(chmod -R 777*)",
+      "Bash(sudo rm*)",
+      "Bash(git clean -f*)",
+      "Bash(git branch -D *)",
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -r -f *)",
+      "Bash(sudo rm -rf*)",
+      "Bash(git push origin +*)",
+      "Bash(git push --force *)",
+      "Bash(dd *)",
+      "Bash(mkfs*)",
+      "Bash(shred *)"
+    ]
+  }
+}

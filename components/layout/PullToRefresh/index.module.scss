@@ -1,0 +1,46 @@
+@use '../../../app/styles/colors' as col;
+
+.pullToRefresh {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: col.$cream;
+  box-shadow:
+    rgba(0, 0, 0, 0.25) 0px 10px 24px,
+    rgba(0, 0, 0, 0.25) 0px 8px 8px;
+  color: col.$navy;
+  z-index: 9999;
+  pointer-events: none;
+
+  &--ready {
+    color: col.$gold;
+
+    .pullToRefresh__icon {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__icon {
+    transition: transform 0.2s ease;
+  }
+
+  &__spinner {
+    animation: pullToRefreshSpin 0.8s linear infinite;
+  }
+}
+
+@keyframes pullToRefreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
