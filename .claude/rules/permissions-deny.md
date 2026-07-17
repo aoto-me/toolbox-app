@@ -14,3 +14,12 @@
 先頭一致+末尾ワイルドカード以外のパターンが必要な場合は、`permissions.deny` に頼らず `.claude/hooks/` に `grep -qE` ベースのスクリプトを書き、`PreToolUse`（`matcher: "Bash"`）に登録する。参考実装: `block-remote-script-exec.sh`、`block-drop-sql.sh`、`block-env-secrets.sh`、`block-chmod-777.sh`。
 
 新しい deny ルールや hook を追加したときは、鵜呑みにせず実際にBashツールで（安全な形で）動作確認してから使う。
+
+# ファイル書き込み系ツールは Write(...) ではなく Edit(...) で書く
+
+`permissions.deny` に `Write(path)` パターンを書いても**パーミッション判定では一切マッチしない**（Claude Code起動時に警告が出る）。Write / Edit / NotebookEdit などファイルを書き込む全ツールへのdenyは `Edit(path)` パターンに統一されている。
+
+- 誤り: `"Write(**/*.pem)"` → 効果なし
+- 正しい: `"Edit(**/*.pem)"` → Write/Edit/NotebookEditすべてをブロック
+
+対象ファイルが存在するかどうか（新規作成 or 上書き）には関係なく、`Edit(...)` のパスパターンだけで判定される。実際に存在しない新規パスへの `Write` でもブロックされることを実機確認済み。
