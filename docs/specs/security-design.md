@@ -72,3 +72,8 @@
 `.npmrc` に `min-release-age=20160`（14日 = 20160分）を設定している。
 
 npm に公開されてから14日未満のパッケージバージョンはインストールできないようにすることで、悪意あるパッケージが公開された直後に Dependabot 等で自動インストールされるリスクを軽減する。
+
+CI（`.github/workflows/ci.yml`）では以下も実施している。
+
+- **Dependency Review**（`actions/dependency-review-action`）: PRで新規追加・変更される依存パッケージに既知の脆弱性がないかをマージ前にチェックする
+- **`npm audit signatures`**: インストールされたパッケージがnpmレジストリの署名で改ざんされていないかを検証する
