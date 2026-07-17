@@ -8,9 +8,14 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -26,6 +31,9 @@ jobs:
 
       - name: Audit
         run: npm audit --audit-level=high
+
+      - name: Audit signatures
+        run: npm audit signatures
 
       - name: Lint
         run: npm run lint
