@@ -18,6 +18,8 @@
 # next.js
 /.next/
 /out/
+# next devが毎回自動生成するAIエージェント向け注意書き(node_modules/next/dist/server/lib/generate-agent-files.js)
+/AGENTS.md
 
 # production
 /build
