@@ -56,15 +56,15 @@
 
 ### インフラ・CI/CD
 
-| 技術           | 用途                                                |
-| -------------- | --------------------------------------------------- |
-| AWS S3         | ファイルストレージ（署名付きURL）                   |
-| AWS EC2 / RDS  | 本番インフラ                                        |
-| Docker         | コンテナ化                                          |
-| Nginx          | リバースプロキシ・SSL終端                           |
-| Amazon ECR     | Dockerイメージレジストリ                            |
-| GitHub Actions | CI/CD（audit / lint / test / build / e2e / deploy） |
-| Sentry         | エラーモニタリング                                  |
+| 技術           | 用途                                        |
+| -------------- | ------------------------------------------- |
+| AWS S3         | ファイルストレージ（署名付きURL）           |
+| AWS EC2 / RDS  | 本番インフラ                                |
+| Docker         | コンテナ化                                  |
+| Nginx          | リバースプロキシ・SSL終端                   |
+| Amazon ECR     | Dockerイメージレジストリ                    |
+| GitHub Actions | CI/CD（lint / test / build / e2e / deploy） |
+| Sentry         | エラーモニタリング                          |
 
 ### 開発ツール
 
@@ -126,8 +126,8 @@ AIエージェントで自律的に開発を進めるにあたり、「開発環
 
 万が一、AIエージェントが制御をすり抜けた場合に備え、mainブランチを保護しています。
 
-- **Branch protection rulesでmainブランチへの直接push・force pushを禁止** — mainブランチへの直接反映や履歴の破壊を防ぐ
-- **必須CIチェック（audit / lint / test / build / e2e）の通過をマージ条件に設定** — 脆弱性のある依存パッケージやテスト・ビルドに失敗する状態のコードが、そのまま本番へ反映されてしまうことを防ぐ
+- **リポジトリルール（Rulesets）でmainブランチへの直接push・force pushを禁止** — mainブランチへの直接反映や履歴の破壊を防ぐ
+- **必須ステータスチェック（ci / e2e）の通過をマージ条件に設定** — テスト・ビルドに失敗する状態のコードが、そのまま本番へ反映されてしまうことを防ぐ。新規に追加される脆弱性のある依存パッケージはDependency Reviewで検知し、既存の脆弱性はGitHub Dependabotのセキュリティアラートで追跡する
 
 &nbsp;
 
@@ -144,7 +144,7 @@ AIエージェントで自律的に開発を進めるにあたり、「開発環
   ↓
 [AI] プルリクエストを作成
   ↓
-[GitHub Actions] audit → lint → ユニットテスト(Vitest) → build → E2Eテスト(Playwright) を実行
+[GitHub Actions] lint → ユニットテスト(Vitest) → build → E2Eテスト(Playwright) を実行
   ↓
 [AI] 必須CIチェックの通過を確認し、squashマージを実行
   ↓
@@ -158,7 +158,7 @@ AIエージェントで自律的に開発を進めるにあたり、「開発環
 ```
 [Dependabot] 週次でnpm依存関係をチェックし、patch/minor更新をグループ化してPR作成
   ↓
-[GitHub Actions] audit → lint → ユニットテスト(Vitest) → build → E2Eテスト(Playwright) を実行
+[GitHub Actions] lint → ユニットテスト(Vitest) → build → E2Eテスト(Playwright) を実行
   ↓
 [GitHub Actions] patch・minorの更新はCI通過後、専用ワークフローが自動でsquashマージ
   ↓

@@ -29,10 +29,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit
-        if: github.actor == 'dependabot[bot]'
-        run: npm audit --audit-level=high
-
       - name: Audit signatures
         run: npm audit signatures
 
