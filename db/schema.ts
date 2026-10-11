@@ -1,4 +1,5 @@
 import { index, integer, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { MEMO_MAX_LENGTH } from '@/lib/memo';
 
 export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -9,7 +10,7 @@ export const users = pgTable('users', {
 });
 
 export const memos = pgTable('memos', {
-  content: varchar('content', { length: 1000 }).default('').notNull(),
+  content: varchar('content', { length: MEMO_MAX_LENGTH }).default('').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   id: serial('id').primaryKey(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
