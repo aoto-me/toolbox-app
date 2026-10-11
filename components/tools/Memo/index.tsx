@@ -4,11 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDashboardData } from '@/components/layout/DashboardDataProvider';
 import { saveMemo } from '@/lib/actions/memo';
 import { formatUpdatedAt } from '@/lib/format';
+import { MEMO_MAX_LENGTH } from '@/lib/memo';
 import { setRefreshBlocked } from '@/lib/refresh-guard';
 import { createSaveSequence } from '@/lib/save-sequence';
 import styles from './index.module.scss';
 
-const MAX_LENGTH = 1000;
 const DEBOUNCE_MS = 1500;
 
 type SaveStatus = 'error' | 'idle' | 'saved' | 'saving';
@@ -53,7 +53,7 @@ export default function Memo() {
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
-    if (text.length > MAX_LENGTH) return;
+    if (text.length > MEMO_MAX_LENGTH) return;
     setContent(text);
     setSaveStatus('saving');
     setRefreshBlocked('memo', true);
@@ -88,7 +88,7 @@ export default function Memo() {
   };
 
   const charCountClass = () => {
-    if (content.length > MAX_LENGTH) return styles['memo__charCount--over'];
+    if (content.length > MEMO_MAX_LENGTH) return styles['memo__charCount--over'];
     return '';
   };
 
@@ -97,7 +97,7 @@ export default function Memo() {
       <textarea
         className={styles.memo__textarea}
         id="memo-content"
-        maxLength={MAX_LENGTH}
+        maxLength={MEMO_MAX_LENGTH}
         onChange={handleChange}
         placeholder="メモを入力..."
         ref={textareaRef}
@@ -107,7 +107,7 @@ export default function Memo() {
       <div className={styles.memo__footer}>
         <span className={`${styles.memo__status} ${statusClass()}`}>{statusLabel()}</span>
         <span className={`${styles.memo__charCount} ${charCountClass()}`}>
-          {content.length} / {MAX_LENGTH}
+          {content.length} / {MEMO_MAX_LENGTH}
         </span>
       </div>
     </div>

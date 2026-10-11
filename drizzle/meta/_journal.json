@@ -8,6 +8,13 @@
       "when": 1782371621704,
       "tag": "0000_skinny_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791756885430,
+      "tag": "0001_equal_caretaker",
+      "breakpoints": true
     }
   ]
 }
