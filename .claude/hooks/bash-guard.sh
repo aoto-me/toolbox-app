@@ -103,30 +103,37 @@ fi
 #   実際のgitが受け付ける書き方を想定から外してしまい、検知をすり抜けられる
 #   (自動セキュリティレビューで指摘・実機検証で確認済み)。
 #   同一コマンド区切り内での語順だけを見ることで、フラグの文法に依存せず検知する。
-GIT_SEP='[^;&|\n]*'
+SAME_CMD_SEP='[^;&|\n]*'
 GIT_START='(^|\s|;|&&|\||\(|`)git\b'
-if match "${GIT_START}${GIT_SEP}\breset\b${GIT_SEP}--hard\b"; then
+if match "${GIT_START}${SAME_CMD_SEP}\breset\b${SAME_CMD_SEP}--hard\b"; then
     emit_deny "git reset --hard は禁止されています。未コミットの変更が失われる可能性があります。"
 fi
-if match "${GIT_START}${GIT_SEP}\bclean\b${GIT_SEP}(-[a-zA-Z]*f[a-zA-Z]*(\s|$)|--force\b)"; then
+if match "${GIT_START}${SAME_CMD_SEP}\bclean\b${SAME_CMD_SEP}(-[a-zA-Z]*f[a-zA-Z]*(\s|$)|--force\b)"; then
     emit_deny "git clean -f(未追跡ファイルの強制削除)は禁止されています。"
 fi
-if match "${GIT_START}${GIT_SEP}\bpush\b${GIT_SEP}(\s(-f|--force)(\s|$)|\s\+[^ \t;&|\n]+)"; then
+if match "${GIT_START}${SAME_CMD_SEP}\bpush\b${SAME_CMD_SEP}(\s(-f|--force)(\s|$)|\s\+[^ \t;&|\n]+)"; then
     emit_deny "git push --force(force push)は禁止されています。リモートの履歴を書き換える危険があります。"
 fi
 
 # docker compose の破壊的操作(ボリューム削除・強制削除。同一コマンド区切り内での語順のみを見る)
-if match "(^|\s|;|&&|\||\(|\`)docker\s+compose${GIT_SEP}\b(down|rm)\b${GIT_SEP}(-v\b|--volumes\b|-f\b|--force\b)"; then
+if match "(^|\s|;|&&|\||\(|\`)docker\s+compose${SAME_CMD_SEP}\b(down|rm)\b${SAME_CMD_SEP}(-v\b|--volumes\b|-f\b|--force\b)"; then
     emit_deny "docker compose down/rm へのボリューム削除・強制オプションは禁止されています。データが失われる可能性があります。"
 fi
 
 # chmod -R 777 系(旧 block-chmod-777)
-FULL_PERM='(^|[^0-9])0?777([^0-9]|$)|(^|[^a-zA-Z])(a|ugo)[+=]rwx([^a-zA-Z]|$)'
-RECURSIVE_FLAG='(^|\s)-[a-zA-Z]*R[a-zA-Z]*(\s|$)|--recursive'
-if match 'chmod' && match "$RECURSIVE_FLAG" && match "$FULL_PERM"; then
+# ※ chmod・再帰フラグ・パーミッションの3つを独立したmatch呼び出しのANDで見ると、
+#   複数行コミットメッセージ等でこれらの語が別々の行に散らばっただけでも誤検出する
+#   (git系パターンと同じ原因。実機検証で確認済み)。1つのmatch呼び出しに結合し、
+#   同一行内での語順(両方の順序)を要求することで誤検出を防ぐ。
+#   ※ 末尾の境界は `(\s|$)` のような「消費する」形だと、連結時に手前のグループが
+#   区切り文字を欲張って消費してしまい、後続グループの先頭境界(`[^0-9]`等)が
+#   判定対象の文字を失ってすり抜ける(実機検証で確認済み)。消費しない `\b` に統一する。
+FULL_PERM='\b0?777\b|\b(a|ugo)[+=]rwx\b'
+RECURSIVE_FLAG='(^|\s)-[a-zA-Z]*R[a-zA-Z]*\b|--recursive\b'
+if match "chmod${SAME_CMD_SEP}(${RECURSIVE_FLAG})${SAME_CMD_SEP}(${FULL_PERM})" || match "chmod${SAME_CMD_SEP}(${FULL_PERM})${SAME_CMD_SEP}(${RECURSIVE_FLAG})"; then
     emit_deny "777 等の全権限をディレクトリ配下に再帰的に付与するコマンドは禁止されています。"
 fi
-if match 'find\s.*-exec\s+chmod\s' && match "$FULL_PERM"; then
+if match "find\s.*-exec\s+chmod\s${SAME_CMD_SEP}(${FULL_PERM})"; then
     emit_deny "find でファイルを走査しながら 777 等の全権限を付与するコマンドは禁止されています。"
 fi
 
