@@ -3,13 +3,20 @@
 Claude Code のフックには、この環境固有の制約が2つある。**知らずに素朴に書くと動かない。**
 詳しい経緯・証拠は `.claude/hooks/README.md`。
 
-## 制約1: `matcher:"Bash"` は発火しない(Claude Code のバグ)
+## 制約1(解消済み・2026-10-12): `matcher:"Bash"` は以前発火しなかった(Claude Code のバグ)
 
-- `PreToolUse` で `matcher: "Bash"` を指定したフックは**一切発火しない**(`WebFetch` や `Write|Edit` は正常)。
-- **matcher なし(全ツール対象)なら Bash でも発火する。**
-- したがって **Bash に対する block/confirm は、個別フックを新規作成せず `.claude/hooks/bash-guard.sh`(matcher なし)に追記する。**
-  中で `tool_name=="Bash"` を判定し、`emit_deny`(ブロック)/`emit_ask`(確認)を呼ぶだけ。
-- 新しく `matcher:"Bash"` のフックを settings.json に登録しないこと(発火しない)。
+- 2026-07時点のClaude Code 2.1.201では、`PreToolUse` で `matcher: "Bash"` を指定したフックが
+  **一切発火しなかった**(`WebFetch` や `Write|Edit` は正常)。回避策として matcher なし(全ツール対象)
+  で登録し、中で `tool_name=="Bash"` を自前判定する方式(`bash-guard.sh`)を取っていた。
+- **2026-10-12、Claude Code 2.1.212で再検証したところ、`matcher:"Bash"` は正常に発火することを
+  実機確認した**(発火スモーク・実際のdenyの両方で確認済み)。`.claude/settings.json` の
+  `bash-guard.sh` 登録は `matcher:"Bash"` に戻してシンプルな本来の形にしている。
+- **Bash に対する block/confirm は `.claude/hooks/bash-guard.sh` に追記する**(集約方針自体は維持。
+  複数ファイルに分散させるより1箇所にまとまっている方が保守しやすいため)。中で `emit_deny`/`emit_ask`
+  を呼ぶだけ。`tool_name=="Bash"` の判定も defense-in-depth として残したまま。
+- 将来また `matcher:"Bash"` が発火しなくなったら(Claude Code側の再発バグの可能性)、
+  `echo __hookcheck__` の発火スモークで気付けるはず。その場合は matcher なしに戻すこと。
+  詳しい経緯は `.claude/hooks/README.md`。
 
 ## 制約2: `/dev/tty` は使えない(v2.1.139 以降の公式仕様)
 
