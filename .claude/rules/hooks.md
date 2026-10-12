@@ -48,15 +48,19 @@ Claude Code には `permissions.deny`/`permissions.ask`/`permissions.allow` と�
 より狭い `allow` があっても、マッチする `ask` があれば必ず確認が入る)。これを踏まえて使い分ける:
 
 - **動的な分岐ロジックが不要な単純な確認**(`gh pr create`・`npm install`・DBマイグレーション等)は
-  `.claude/settings.json` の `permissions.ask` に書く。ネイティブ側は複合コマンド(`&&`・`;`・`|`・サブシェル等)を
-  正しく分割して判定するため、`bash-guard.sh` の素朴な文字列マッチより compound command 耐性が高い。
+  `.claude/settings.json` の `permissions.ask` **にも**同じルールを追加し、`bash-guard.sh` 側の既存の
+  `emit_ask` と二重化する。ネイティブ側は複合コマンド(`&&`・`;`・`|`・サブシェル等)を正しく分割して
+  判定できる一方、**コマンドのテキスト表現にしかマッチせず**、`env gh pr create` のような
+  Claude Codeが対応していないラッパー経由の呼び出しは素通りする(公式ドキュメント
+  `What a Bash rule doesn't match` に明記)。`bash-guard.sh` の正規表現は語の位置を問わず検知できるため、
+  どちらか一方への完全移行ではなく両方に書くのが安全(自動セキュリティレビューで指摘・確認プロンプト自体は
+  二重に出ない)。
 - **動的な分岐ロジックが必要な確認**(例: mainブランチかどうかで deny/ask を変える `git push`)は
-  ネイティブルールで表現できないため `bash-guard.sh` に残す。
+  ネイティブルールで表現できないため `bash-guard.sh` にのみ残す。
 - **「どんな書き方をされても確実に防ぎたい」破壊的操作**(`git reset --hard`・`chmod -R 777` 等)も
-  `bash-guard.sh` に残す。ネイティブの `Bash(git push *)` 系ルールは**コマンドのテキスト表現にしか
+  `bash-guard.sh` にのみ残す。ネイティブの `Bash(git push *)` 系ルールは**コマンドのテキスト表現にしか
   マッチしない**ため、`git -C . push` や `git -c push.default=current push` のような別の書き方は
-  素通りする(公式ドキュメント `What a Bash rule doesn't match` に明記)。`bash-guard.sh` の正規表現は
-  こうした迂回形にも対応できるよう意図的に柔軟に書いている。
+  素通りする。`bash-guard.sh` の正規表現はこうした迂回形にも対応できるよう意図的に柔軟に書いている。
 
 ## その他
 

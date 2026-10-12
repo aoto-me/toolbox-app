@@ -178,16 +178,32 @@ if match '(^|;|&&|\|)[[:space:]]*(env|printenv)[[:space:]]*($|\||;|&&|>)'; then
 fi
 
 # ========================= ask(確認)=========================
-# DB マイグレーション・gh pr create・npm install/add の確認は、動的な分岐ロジックが
-# 不要な単純パターンのため、ネイティブの permissions.ask(.claude/settings.json)に
-# 移行済み。ask は allow より常に優先される(具体性に関わらない)ため、
-# settings.local.json の広い allow(`npx tsx *` 等)があっても確認は機能する。
-# git push(非main)は main ブランチ判定という動的ロジックが必要なため、
-# ネイティブルールで表現できず、ここに残す。
+# DB マイグレーション・gh pr create・npm install/add は、ネイティブの permissions.ask
+# (.claude/settings.json)にも同じ確認を追加済み(deny/askは常にallowより優先されるため
+# settings.local.json の広い allow があっても機能する)。ただしネイティブルールは
+# コマンドのテキスト表現にしかマッチせず、`env gh pr create` のような非対応ラッパー
+# 経由の呼び出しは素通りする(公式ドキュメント `What a Bash rule doesn't match` 参照)。
+# ここの正規表現は語の位置を問わず検知できるため、多層防御として両方に残す
+# (自動セキュリティレビューで指摘・確認プロンプト自体は二重に出ない)。
+
+# DB マイグレーション(旧 confirm-db-migrate)
+if match 'tsx +db/migrate\.ts|drizzle-kit +migrate'; then
+    emit_ask "DB マイグレーションを実行しようとしています。内容を確認して許可しますか？"
+fi
+
+# gh pr create(旧 confirm-pr-create)
+if match 'gh pr create'; then
+    emit_ask "gh pr create を実行しようとしています。PR 作成後は CI チェック→自動マージ→本番デプロイまで自動で進みます。実行しますか？"
+fi
 
 # git push(main は上で deny 済み。ここは非 main の push、旧 confirm-git-push)
 if match 'git push'; then
     emit_ask "git push を実行しようとしています。実行しますか？"
+fi
+
+# npm install / add(旧 confirm-npm-install)
+if match 'npm (install|i|add) .+'; then
+    emit_ask "パッケージのインストールを検出しました。インストールしますか？"
 fi
 
 exit 0
