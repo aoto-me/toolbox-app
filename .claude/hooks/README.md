@@ -127,21 +127,21 @@
 
 ## 元のフック → 対応結果
 
-| 元のフック名                     | 用途                     |  以前  | 現在 | 対応                                 |
-| -------------------------------- | ------------------------ | :----: | :--: | ------------------------------------ |
-| `block-rm.sh`                    | rm 禁止                  | ❌不発 |  ✅  | bash-guard に deny 集約              |
-| `block-main-branch.sh`           | main 直 commit/push 禁止 | ❌不発 |  ✅  | 〃 deny(ブランチ判定込)              |
-| `block-sensitive-file-access.sh` | 機密ファイル参照禁止     | ❌不発 |  ✅  | 〃 deny                              |
-| `block-remote-script-exec.sh`    | `curl\|bash` 禁止        | ❌不発 |  ✅  | 〃 deny                              |
-| `block-chmod-777.sh`             | `chmod -R 777` 禁止      | ❌不発 |  ✅  | 〃 deny                              |
-| `block-drop-sql.sh`              | `DROP TABLE` 禁止        | ❌不発 |  ✅  | 〃 deny                              |
-| `block-env-secrets.sh`           | AWS/S3・env ダンプ禁止   | ❌不発 |  ✅  | 〃 deny                              |
-| `confirm-git-push.sh`            | git push 確認            | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-pr-create.sh`           | gh pr create 確認        | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-npm-install.sh`         | npm install 確認         | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-db-migrate.sh`          | DB migrate 確認          | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-webfetch.sh`            | WebFetch ドメイン制御    | ⚠️半壊 |  ✅  | JSON 化・allow/ask・whitelist 実効化 |
-| `post-edit-lint.sh`              | Edit/Write 後の整形      |   ✅   |  ✅  | 変更なし(元から正常)                 |
+| 元のフック名                     | 用途                     |  以前  | 現在 | 対応                                                          |
+| -------------------------------- | ------------------------ | :----: | :--: | ------------------------------------------------------------- |
+| `block-rm.sh`                    | rm 禁止                  | ❌不発 |  ✅  | bash-guard に deny 集約                                       |
+| `block-main-branch.sh`           | main 直 commit/push 禁止 | ❌不発 |  ✅  | 〃 deny(ブランチ判定込)                                       |
+| `block-sensitive-file-access.sh` | 機密ファイル参照禁止     | ❌不発 |  ✅  | 〃 deny                                                       |
+| `block-remote-script-exec.sh`    | `curl\|bash` 禁止        | ❌不発 |  ✅  | 〃 deny                                                       |
+| `block-chmod-777.sh`             | `chmod -R 777` 禁止      | ❌不発 |  ✅  | 〃 deny                                                       |
+| `block-drop-sql.sh`              | `DROP TABLE` 禁止        | ❌不発 |  ✅  | 〃 deny                                                       |
+| `block-env-secrets.sh`           | AWS/S3・env ダンプ禁止   | ❌不発 |  ✅  | 〃 deny                                                       |
+| `confirm-git-push.sh`            | git push 確認            | ❌不発 |  ✅  | 〃 ask(mainブランチ判定が必要なため残存)                      |
+| `confirm-pr-create.sh`           | gh pr create 確認        | ❌不発 |  ✅  | 〃 ask + 2026-10、ネイティブ `permissions.ask` も追加(二重化) |
+| `confirm-npm-install.sh`         | npm install 確認         | ❌不発 |  ✅  | 〃                                                            |
+| `confirm-db-migrate.sh`          | DB migrate 確認          | ❌不発 |  ✅  | 〃                                                            |
+| `confirm-webfetch.sh`            | WebFetch ドメイン制御    | ⚠️半壊 |  ✅  | JSON 化・allow/ask・whitelist 実効化                          |
+| `post-edit-lint.sh`              | Edit/Write 後の整形      |   ✅   |  ✅  | 変更なし(元から正常)                                          |
 
 旧11スクリプト(block/confirm)は `.trash/hooks-old/` へ退避済み(最終削除はユーザー判断)。
 
@@ -205,4 +205,53 @@
 - `matcher:"Bash"` は使わない。matcher なし + `tool_name` 判定が唯一効く経路。
 - 将来 Anthropic が問題1のバグを直したら、`matcher:"Bash"` グループを復活させないこと(bash-guard と二重発火する)。
 - WebFetch の許可は、フック(`allow` 返却)の代わりに `permissions.allow` の `WebFetch(domain:...)` でも制御可能。
+- 動的な分岐ロジックが不要な単純な確認は、`bash-guard.sh` の `emit_ask` に加えて
+  `.claude/settings.json` の `permissions.ask` にも同じルールを書く(二重化)。
+  ネイティブ側は compound command 耐性が高い一方、コマンドのテキスト表現にしか
+  マッチしないため、どちらか一方だけでは不十分
+  (詳細は `.claude/rules/hooks.md`「ネイティブ `permissions.ask` との使い分け」)。
 - 関連ルール: `.claude/rules/permissions-deny.md`(deny 構文の穴)。
+
+## 複数キーワードを1つの正規表現に結合する際のハマりどころ(2026-10 調査)
+
+`bash-guard.sh` に `git reset --hard` 等の検知を追加する過程で、独立した `match` 呼び出しを
+`&&` で繋ぐ実装(3語の存在チェック)には**複数行コミットメッセージで語が別々の行に散らばるだけで
+誤検出する**欠陥があることが判明した(各 `grep -q` 呼び出しは「入力のどこかの行にマッチするか」を
+独立に判定するため、3つの語が別の行にあっても全部「真」になる)。1つの正規表現に結合して
+「同一コマンド区切り内での語順」を要求することで解消したが、その過程で3つの罠に遭遇した。
+
+### 罠1: 文字クラス内の `\n` はPOSIX的には「バックスラッシュとnの2文字」
+
+シングルクォートで `'[^;&|\n]*'` と書いても、POSIXの文字クラス`[...]`内ではバックスラッシュは
+エスケープとして特別扱いされない。GNU grep はこれを拡張的に「改行」として解釈するため**この環境では
+動くが**、他のgrep実装(busybox等)では「バックスラッシュ文字そのものと `n` という文字を除外する」
+という意図しない意味になり得る(実害は無いはずだが要注意)。
+
+### 罠2: ANSI-Cクォートで実改行バイトを埋め込むと grep が壊れる
+
+罠1の対策として `$'[^;&|\n]*'`(ANSI-Cクォートで実際の改行バイトを埋め込む)を試したところ、
+**`grep: Unmatched [, [^, [:, [., or [=` エラーで即死**した。原因は、grepは**パターン文字列自体に
+改行が含まれると、それを「複数パターンを改行区切りで並べたもの」として解釈し、パターンをその改行で
+分割してしまう**ため。`[^;&|<実改行>]*` は `[^;&|` (未閉じの括弧)と `]*` (孤立した閉じ括弧)という
+2つの壊れたパターンに分割され、エラーになる。**マッチ対象の入力に改行を含めるのは正常(grepの
+行単位処理そのもの)だが、パターン文字列自体に生の改行を混ぜるのは別物で、必ず壊れる。**
+
+### 罠3: 正しい解決策は `[:cntrl:]`(POSIX標準の文字クラス)
+
+罠1・罠2の両方を回避できたのは `[^;&|[:cntrl:]]*` という書き方。`[:cntrl:]` はPOSIX標準の
+文字クラスで、バックスラッシュの解釈もパターン文字列への生改行の混入も発生しない。
+**今後、文字クラス内で改行を除外したい場合は `\n` ではなく `[:cntrl:]` を使うこと。**
+
+### 罠4: 「境界を消費する」正規表現を連結すると、手前が区切り文字を食い尽くす
+
+`RECURSIVE_FLAG='(^|\s)-[a-zA-Z]*R[a-zA-Z]*(\s|$)|--recursive'` のように、元々
+**単独の完全な文字列に対して独立にテストする前提**で書かれた正規表現(末尾が `(\s|$)` で
+「空白 or 文字列末尾」を消費する形)を、他の正規表現と文字列連結して1つのパターンにすると、
+POSIXのleftmost-longestマッチングにより**手前の要素が区切り文字(スペース)を欲張って消費してしまい、
+後続要素の先頭境界判定(`[^0-9]` 等、やはり「消費する」形)が判定対象の文字を失ってすり抜ける**。
+例: `chmod -R 777` で `-R` の後の `(\s|$)` がスペースを消費すると、続く `777` の `[^0-9]` 境界には
+何も残らず(直後の文字が既に数字`7`)、マッチに失敗する。
+**解決策: 境界判定はすべて消費しないゼロ幅の `\b` に統一する。** `\b` は位置を進めないため、
+スペースは後続の境界判定にそのまま残り、連結しても競合しない。
+**複数の既存パターンを文字列結合で1つの正規表現にまとめるときは、各パーツの境界表現が
+「消費する形」か「ゼロ幅」かを必ず確認すること。**

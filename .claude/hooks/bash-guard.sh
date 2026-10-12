@@ -178,6 +178,13 @@ if match '(^|;|&&|\|)[[:space:]]*(env|printenv)[[:space:]]*($|\||;|&&|>)'; then
 fi
 
 # ========================= ask(確認)=========================
+# DB マイグレーション・gh pr create・npm install/add は、ネイティブの permissions.ask
+# (.claude/settings.json)にも同じ確認を追加済み(deny/askは常にallowより優先されるため
+# settings.local.json の広い allow があっても機能する)。ただしネイティブルールは
+# コマンドのテキスト表現にしかマッチせず、`env gh pr create` のような非対応ラッパー
+# 経由の呼び出しは素通りする(公式ドキュメント `What a Bash rule doesn't match` 参照)。
+# ここの正規表現は語の位置を問わず検知できるため、多層防御として両方に残す
+# (自動セキュリティレビューで指摘・確認プロンプト自体は二重に出ない)。
 
 # DB マイグレーション(旧 confirm-db-migrate)
 if match 'tsx +db/migrate\.ts|drizzle-kit +migrate'; then
