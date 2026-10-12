@@ -82,6 +82,14 @@
       "Bash(dd *)",
       "Bash(mkfs*)",
       "Bash(shred *)"
+    ],
+    "ask": [
+      "Bash(gh pr create *)",
+      "Bash(npm install *)",
+      "Bash(npm i *)",
+      "Bash(npm add *)",
+      "Bash(npx tsx db/migrate.ts *)",
+      "Bash(npx drizzle-kit migrate *)"
     ]
   }
 }
