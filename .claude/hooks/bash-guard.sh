@@ -29,6 +29,16 @@ CWD=$(printf '%s' "$INPUT" | python3 -c "import json,sys; print(json.load(sys.st
 # 前提の正規表現(本スクリプト内の全パターン共通)をすり抜けられるため(実機検証で確認済み)。
 CMD="${CMD//$'\\\n'/ }"
 
+# 複数キーワードを「同一コマンド区切り内」でのみ結合させるための共通セパレータ。
+# `\n` を文字クラス内に直接書く案は2通りとも実機で問題が出たため、POSIXの
+# `[:cntrl:]` を使う: (1)シングルクォートの `\n` はPOSIX的には「バックスラッシュと
+# nという2文字」と解釈されうる(GNU grepは拡張的にニューラインとして解釈するが、
+# 他のgrep実装では保証されない。自動セキュリティレビューで指摘)。
+# (2)ANSI-Cクォート($'...')で実改行バイトを直接埋め込むと、grepがパターン文字列
+# 自体を改行で複数パターンに分割してしまい `[^;&|` が未閉じの括弧として壊れる
+# (実機検証で確認済み・"Unmatched [" エラー)。`[:cntrl:]`はこの両方を回避できる。
+SAME_CMD_SEP='[^;&|[:cntrl:]]*'
+
 # 目印: このフック由来の deny/ask であることを一目で分かるよう、理由文の先頭に必ず付ける。
 # Claude Code のデフォルト確認と区別するため。
 GUARD_MARK='🪝 [bash-guard] '
@@ -91,7 +101,7 @@ fi
 # curl/wget をプロセス置換・コマンド置換経由で実行(パイプ直結ではない迂回パターン)
 # ※ [[:space:]]は改行も含むため、改行を挟まないよう明示的に除外する
 #   (git系パターンと同じ理由。複数行コミットメッセージでの誤検出を防ぐ)。
-if match '(bash|sh|zsh|source)[ \t]*<\([ \t]*(curl|wget)[ \t]' || match '\beval\b[^;&|\n]*\$\([ \t]*(curl|wget)[ \t]'; then
+if match "(bash|sh|zsh|source)[ \t]*<\\([ \t]*(curl|wget)[ \t]" || match "\\beval\\b${SAME_CMD_SEP}\\\$\\([ \t]*(curl|wget)[ \t]"; then
     emit_deny "curl/wget の出力をプロセス置換・コマンド置換経由でシェルに渡して実行するパターンは禁止されています。"
 fi
 
@@ -103,7 +113,6 @@ fi
 #   実際のgitが受け付ける書き方を想定から外してしまい、検知をすり抜けられる
 #   (自動セキュリティレビューで指摘・実機検証で確認済み)。
 #   同一コマンド区切り内での語順だけを見ることで、フラグの文法に依存せず検知する。
-SAME_CMD_SEP='[^;&|\n]*'
 GIT_START='(^|\s|;|&&|\||\(|`)git\b'
 if match "${GIT_START}${SAME_CMD_SEP}\breset\b${SAME_CMD_SEP}--hard\b"; then
     emit_deny "git reset --hard は禁止されています。未コミットの変更が失われる可能性があります。"
@@ -111,7 +120,7 @@ fi
 if match "${GIT_START}${SAME_CMD_SEP}\bclean\b${SAME_CMD_SEP}(-[a-zA-Z]*f[a-zA-Z]*(\s|$)|--force\b)"; then
     emit_deny "git clean -f(未追跡ファイルの強制削除)は禁止されています。"
 fi
-if match "${GIT_START}${SAME_CMD_SEP}\bpush\b${SAME_CMD_SEP}(\s(-f|--force)(\s|$)|\s\+[^ \t;&|\n]+)"; then
+if match "${GIT_START}${SAME_CMD_SEP}\bpush\b${SAME_CMD_SEP}(\s(-f|--force)(\s|$)|\s\+[^ \t;&|[:cntrl:]]+)"; then
     emit_deny "git push --force(force push)は禁止されています。リモートの履歴を書き換える危険があります。"
 fi
 
