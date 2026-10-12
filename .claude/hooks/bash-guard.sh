@@ -83,6 +83,32 @@ if match '(curl|wget)[^|]*\|[[:space:]]*(sudo[[:space:]]+)?(bash|sh|zsh)([[:spac
     emit_deny "curl/wget で取得したスクリプトを未確認のままシェルに渡して実行するパターンは禁止されています。"
 fi
 
+# curl/wget をプロセス置換・コマンド置換経由で実行(パイプ直結ではない迂回パターン)
+if match '(bash|sh|zsh|source)[[:space:]]*<\([[:space:]]*(curl|wget)[[:space:]]' || match '\beval\b[^;&|]*\$\([[:space:]]*(curl|wget)[[:space:]]'; then
+    emit_deny "curl/wget の出力をプロセス置換・コマンド置換経由でシェルに渡して実行するパターンは禁止されています。"
+fi
+
+# git reset --hard / git clean -f / force push(permissions.denyは先頭一致のみのため、
+# `git -C <path> ...` や引数順序違い(-df, -fd等)、sudo経由をここで補完する)
+# ※ 3語の独立した存在チェックではなく1つの正規表現で同一行内の並びを要求する。
+#   独立チェックだと、コミットメッセージ等でgit/reset/--hardが別々の行に
+#   散らばっているだけでも誤検出するため(実機検証で確認済み)。
+GIT_PREFIX='(^|\s|;|&&|\||\(|`)git(\s+-{1,2}[A-Za-z0-9_.-]+(\s+[^ \t;&|\n]+)?)*\s+'
+if match "${GIT_PREFIX}reset\b[^;&|\n]*--hard\b"; then
+    emit_deny "git reset --hard は禁止されています。未コミットの変更が失われる可能性があります。"
+fi
+if match "${GIT_PREFIX}clean\b[^;&|\n]*(-[a-zA-Z]*f[a-zA-Z]*(\s|$)|--force\b)"; then
+    emit_deny "git clean -f(未追跡ファイルの強制削除)は禁止されています。"
+fi
+if match "${GIT_PREFIX}push\b[^;&|\n]*(\s(-f|--force)(\s|$)|\s\+[^ \t;&|\n]+)"; then
+    emit_deny "git push --force(force push)は禁止されています。リモートの履歴を書き換える危険があります。"
+fi
+
+# docker compose の破壊的操作(ボリューム削除・強制削除。同一行内の並びを要求)
+if match '(^|\s|;|&&|\||\(|`)docker\s+compose(\s+-{1,2}[A-Za-z0-9_.-]+(\s+[^ \t;&|\n]+)?)*\s+(down|rm)\b[^;&|\n]*(-v\b|--volumes\b|-f\b|--force\b)'; then
+    emit_deny "docker compose down/rm へのボリューム削除・強制オプションは禁止されています。データが失われる可能性があります。"
+fi
+
 # chmod -R 777 系(旧 block-chmod-777)
 FULL_PERM='(^|[^0-9])0?777([^0-9]|$)|(^|[^a-zA-Z])(a|ugo)[+=]rwx([^a-zA-Z]|$)'
 RECURSIVE_FLAG='(^|\s)-[a-zA-Z]*R[a-zA-Z]*(\s|$)|--recursive'
