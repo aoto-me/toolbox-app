@@ -34,7 +34,9 @@ globs:
 ## 実行
 
 - `npm test` で全ユニットテスト実行（`vitest run`）
-- CI（`.github/workflows/ci.yml`）で PR ごとに lint → test → build → e2e を実行する
+- CI（`.github/workflows/ci.yml`）は PR ごとに2ジョブ並走する
+  - `ci`: Dependency Review → `npm audit signatures` → lint → test → build
+  - `e2e`: Postgres サービスコンテナ起動 → マイグレーション → シード → Playwright実行
 
 ## E2Eテスト（Playwright）
 
