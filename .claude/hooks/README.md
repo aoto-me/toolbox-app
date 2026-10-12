@@ -127,21 +127,21 @@
 
 ## 元のフック → 対応結果
 
-| 元のフック名                     | 用途                     |  以前  | 現在 | 対応                                 |
-| -------------------------------- | ------------------------ | :----: | :--: | ------------------------------------ |
-| `block-rm.sh`                    | rm 禁止                  | ❌不発 |  ✅  | bash-guard に deny 集約              |
-| `block-main-branch.sh`           | main 直 commit/push 禁止 | ❌不発 |  ✅  | 〃 deny(ブランチ判定込)              |
-| `block-sensitive-file-access.sh` | 機密ファイル参照禁止     | ❌不発 |  ✅  | 〃 deny                              |
-| `block-remote-script-exec.sh`    | `curl\|bash` 禁止        | ❌不発 |  ✅  | 〃 deny                              |
-| `block-chmod-777.sh`             | `chmod -R 777` 禁止      | ❌不発 |  ✅  | 〃 deny                              |
-| `block-drop-sql.sh`              | `DROP TABLE` 禁止        | ❌不発 |  ✅  | 〃 deny                              |
-| `block-env-secrets.sh`           | AWS/S3・env ダンプ禁止   | ❌不発 |  ✅  | 〃 deny                              |
-| `confirm-git-push.sh`            | git push 確認            | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-pr-create.sh`           | gh pr create 確認        | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-npm-install.sh`         | npm install 確認         | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-db-migrate.sh`          | DB migrate 確認          | ❌不発 |  ✅  | 〃 ask                               |
-| `confirm-webfetch.sh`            | WebFetch ドメイン制御    | ⚠️半壊 |  ✅  | JSON 化・allow/ask・whitelist 実効化 |
-| `post-edit-lint.sh`              | Edit/Write 後の整形      |   ✅   |  ✅  | 変更なし(元から正常)                 |
+| 元のフック名                     | 用途                     |  以前  | 現在 | 対応                                           |
+| -------------------------------- | ------------------------ | :----: | :--: | ---------------------------------------------- |
+| `block-rm.sh`                    | rm 禁止                  | ❌不発 |  ✅  | bash-guard に deny 集約                        |
+| `block-main-branch.sh`           | main 直 commit/push 禁止 | ❌不発 |  ✅  | 〃 deny(ブランチ判定込)                        |
+| `block-sensitive-file-access.sh` | 機密ファイル参照禁止     | ❌不発 |  ✅  | 〃 deny                                        |
+| `block-remote-script-exec.sh`    | `curl\|bash` 禁止        | ❌不発 |  ✅  | 〃 deny                                        |
+| `block-chmod-777.sh`             | `chmod -R 777` 禁止      | ❌不発 |  ✅  | 〃 deny                                        |
+| `block-drop-sql.sh`              | `DROP TABLE` 禁止        | ❌不発 |  ✅  | 〃 deny                                        |
+| `block-env-secrets.sh`           | AWS/S3・env ダンプ禁止   | ❌不発 |  ✅  | 〃 deny                                        |
+| `confirm-git-push.sh`            | git push 確認            | ❌不発 |  ✅  | 〃 ask(mainブランチ判定が必要なため残存)       |
+| `confirm-pr-create.sh`           | gh pr create 確認        | ❌不発 |  ✅  | 2026-10、ネイティブ `permissions.ask` に再移行 |
+| `confirm-npm-install.sh`         | npm install 確認         | ❌不発 |  ✅  | 〃                                             |
+| `confirm-db-migrate.sh`          | DB migrate 確認          | ❌不発 |  ✅  | 〃                                             |
+| `confirm-webfetch.sh`            | WebFetch ドメイン制御    | ⚠️半壊 |  ✅  | JSON 化・allow/ask・whitelist 実効化           |
+| `post-edit-lint.sh`              | Edit/Write 後の整形      |   ✅   |  ✅  | 変更なし(元から正常)                           |
 
 旧11スクリプト(block/confirm)は `.trash/hooks-old/` へ退避済み(最終削除はユーザー判断)。
 
