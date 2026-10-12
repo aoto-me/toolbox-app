@@ -15,8 +15,18 @@ FILE_PATH=$(echo "$INPUT" | node -e "
 
 if [ -n "$FILE_PATH" ]; then
   case "$FILE_PATH" in -*) exit 0;; esac
-  npx eslint --fix -- "$FILE_PATH" 2>/dev/null
-  npx prettier --write -- "$FILE_PATH" 2>/dev/null
+
+  ESLINT_OUT=$(npx eslint --fix -- "$FILE_PATH" 2>&1)
+  if [ $? -ne 0 ]; then
+    echo "⚠ ESLintの自動整形に失敗しました($FILE_PATH):" >&2
+    printf '%s\n' "$ESLINT_OUT" >&2
+  fi
+
+  PRETTIER_OUT=$(npx prettier --write -- "$FILE_PATH" 2>&1)
+  if [ $? -ne 0 ]; then
+    echo "⚠ Prettierの自動整形に失敗しました($FILE_PATH):" >&2
+    printf '%s\n' "$PRETTIER_OUT" >&2
+  fi
 fi
 
 exit 0
