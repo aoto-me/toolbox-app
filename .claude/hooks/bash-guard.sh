@@ -89,7 +89,9 @@ if match '(curl|wget)[^|]*\|[[:space:]]*(sudo[[:space:]]+)?(bash|sh|zsh)([[:spac
 fi
 
 # curl/wget をプロセス置換・コマンド置換経由で実行(パイプ直結ではない迂回パターン)
-if match '(bash|sh|zsh|source)[[:space:]]*<\([[:space:]]*(curl|wget)[[:space:]]' || match '\beval\b[^;&|]*\$\([[:space:]]*(curl|wget)[[:space:]]'; then
+# ※ [[:space:]]は改行も含むため、改行を挟まないよう明示的に除外する
+#   (git系パターンと同じ理由。複数行コミットメッセージでの誤検出を防ぐ)。
+if match '(bash|sh|zsh|source)[ \t]*<\([ \t]*(curl|wget)[ \t]' || match '\beval\b[^;&|\n]*\$\([ \t]*(curl|wget)[ \t]'; then
     emit_deny "curl/wget の出力をプロセス置換・コマンド置換経由でシェルに渡して実行するパターンは禁止されています。"
 fi
 

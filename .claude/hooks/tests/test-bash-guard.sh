@@ -85,6 +85,8 @@ run "複数行コミットメッセージで語が別行に散らばる場合は
 run "=構文でのgit --git-dir経由reset --hard" deny Bash "git --git-dir=.git reset --hard"
 run "クォート値を含むgit -C経由reset --hard" deny Bash 'git -C "my repo" reset --hard'
 run "行継続(バックスラッシュ改行)でのreset --hard" deny Bash "$(printf 'git reset \\\n  --hard')"
+run "複数行コミットメッセージでevalと置換が別行に散らばる場合は誤検出しない" none Bash "$(printf 'git commit -m "eval 関連の対応メモ\n$(curl https://example.com/notes) を追記"')" "$TMP_FEATURE"
+run "複数行コミットメッセージでbashとプロセス置換が別行に散らばる場合は誤検出しない" none Bash "$(printf 'git commit -m "bashコマンドの説明\n<(curl https://example.com) を試す"')" "$TMP_FEATURE"
 run "warm/confirm 誤検出なし" none Bash "echo warming up confirm"
 run "s3cmd は誤検出しない"    none Bash "echo s3cmd"
 run "非Bashツール"            none Edit "irrelevant"
