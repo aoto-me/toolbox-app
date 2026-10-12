@@ -90,22 +90,26 @@ fi
 
 # git reset --hard / git clean -f / force push(permissions.denyは先頭一致のみのため、
 # `git -C <path> ...` や引数順序違い(-df, -fd等)、sudo経由をここで補完する)
-# ※ 3語の独立した存在チェックではなく1つの正規表現で同一行内の並びを要求する。
-#   独立チェックだと、コミットメッセージ等でgit/reset/--hardが別々の行に
-#   散らばっているだけでも誤検出するため(実機検証で確認済み)。
-GIT_PREFIX='(^|\s|;|&&|\||\(|`)git(\s+-{1,2}[A-Za-z0-9_.-]+(\s+[^ \t;&|\n]+)?)*\s+'
-if match "${GIT_PREFIX}reset\b[^;&|\n]*--hard\b"; then
+# ※ キーワード間は固定のフラグ文法ではなく「; & | 改行を含まない任意の文字列」として許容する。
+#   フラグを `-{1,2}[A-Za-z0-9_.-]+` のような厳密な文法で解析しようとすると、
+#   `--git-dir=.git`(=区切り)や `-C "my repo"`(スペースを含むクォート値)のような
+#   実際のgitが受け付ける書き方を想定から外してしまい、検知をすり抜けられる
+#   (自動セキュリティレビューで指摘・実機検証で確認済み)。
+#   同一コマンド区切り内での語順だけを見ることで、フラグの文法に依存せず検知する。
+GIT_SEP='[^;&|\n]*'
+GIT_START='(^|\s|;|&&|\||\(|`)git\b'
+if match "${GIT_START}${GIT_SEP}\breset\b${GIT_SEP}--hard\b"; then
     emit_deny "git reset --hard は禁止されています。未コミットの変更が失われる可能性があります。"
 fi
-if match "${GIT_PREFIX}clean\b[^;&|\n]*(-[a-zA-Z]*f[a-zA-Z]*(\s|$)|--force\b)"; then
+if match "${GIT_START}${GIT_SEP}\bclean\b${GIT_SEP}(-[a-zA-Z]*f[a-zA-Z]*(\s|$)|--force\b)"; then
     emit_deny "git clean -f(未追跡ファイルの強制削除)は禁止されています。"
 fi
-if match "${GIT_PREFIX}push\b[^;&|\n]*(\s(-f|--force)(\s|$)|\s\+[^ \t;&|\n]+)"; then
+if match "${GIT_START}${GIT_SEP}\bpush\b${GIT_SEP}(\s(-f|--force)(\s|$)|\s\+[^ \t;&|\n]+)"; then
     emit_deny "git push --force(force push)は禁止されています。リモートの履歴を書き換える危険があります。"
 fi
 
-# docker compose の破壊的操作(ボリューム削除・強制削除。同一行内の並びを要求)
-if match '(^|\s|;|&&|\||\(|`)docker\s+compose(\s+-{1,2}[A-Za-z0-9_.-]+(\s+[^ \t;&|\n]+)?)*\s+(down|rm)\b[^;&|\n]*(-v\b|--volumes\b|-f\b|--force\b)'; then
+# docker compose の破壊的操作(ボリューム削除・強制削除。同一コマンド区切り内での語順のみを見る)
+if match "(^|\s|;|&&|\||\(|\`)docker\s+compose${GIT_SEP}\b(down|rm)\b${GIT_SEP}(-v\b|--volumes\b|-f\b|--force\b)"; then
     emit_deny "docker compose down/rm へのボリューム削除・強制オプションは禁止されています。データが失われる可能性があります。"
 fi
 
