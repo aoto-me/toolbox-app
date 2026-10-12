@@ -45,6 +45,9 @@ TRUSTED_DOMAINS=(
     "eslint.org"
     "prettier.io"
     "postgresql.org"
+    "docs.claude.com"
+    "docs.anthropic.com"
+    "code.claude.com"
 )
 
 # ドメインが取れないときは判断しない(組込みの標準フローに委ねる)

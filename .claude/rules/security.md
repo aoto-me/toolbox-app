@@ -1,3 +1,7 @@
+---
+globs: ['app/api/**', 'lib/actions/**', 'components/tools/FileUpload/**']
+---
+
 # このプロジェクト固有のセキュリティルール
 
 - ファイルアップロードは必ず S3 のプレサインド URL 経由で行う（直接アップロード禁止）

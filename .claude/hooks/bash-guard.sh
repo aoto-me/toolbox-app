@@ -24,6 +24,21 @@ TOOL=$(printf '%s' "$INPUT" | python3 -c "import json,sys; print(json.load(sys.s
 CMD=$(printf '%s' "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); ti=d.get('tool_input') or {}; print(ti.get('command', d.get('command','')))" 2>/dev/null)
 CWD=$(printf '%s' "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('cwd','/workspace'))" 2>/dev/null)
 
+# バックスラッシュ+改行(シェルの行継続)はスペースに正規化してから判定する。
+# `git reset \`<改行>`  --hard` のように改行で分断するだけで、改行をまたがない
+# 前提の正規表現(本スクリプト内の全パターン共通)をすり抜けられるため(実機検証で確認済み)。
+CMD="${CMD//$'\\\n'/ }"
+
+# 複数キーワードを「同一コマンド区切り内」でのみ結合させるための共通セパレータ。
+# `\n` を文字クラス内に直接書く案は2通りとも実機で問題が出たため、POSIXの
+# `[:cntrl:]` を使う: (1)シングルクォートの `\n` はPOSIX的には「バックスラッシュと
+# nという2文字」と解釈されうる(GNU grepは拡張的にニューラインとして解釈するが、
+# 他のgrep実装では保証されない。自動セキュリティレビューで指摘)。
+# (2)ANSI-Cクォート($'...')で実改行バイトを直接埋め込むと、grepがパターン文字列
+# 自体を改行で複数パターンに分割してしまい `[^;&|` が未閉じの括弧として壊れる
+# (実機検証で確認済み・"Unmatched [" エラー)。`[:cntrl:]`はこの両方を回避できる。
+SAME_CMD_SEP='[^;&|[:cntrl:]]*'
+
 # 目印: このフック由来の deny/ask であることを一目で分かるよう、理由文の先頭に必ず付ける。
 # Claude Code のデフォルト確認と区別するため。
 GUARD_MARK='🪝 [bash-guard] '
@@ -83,13 +98,51 @@ if match '(curl|wget)[^|]*\|[[:space:]]*(sudo[[:space:]]+)?(bash|sh|zsh)([[:spac
     emit_deny "curl/wget で取得したスクリプトを未確認のままシェルに渡して実行するパターンは禁止されています。"
 fi
 
+# curl/wget をプロセス置換・コマンド置換経由で実行(パイプ直結ではない迂回パターン)
+# ※ [[:space:]]は改行も含むため、改行を挟まないよう明示的に除外する
+#   (git系パターンと同じ理由。複数行コミットメッセージでの誤検出を防ぐ)。
+if match "(bash|sh|zsh|source)[ \t]*<\\([ \t]*(curl|wget)[ \t]" || match "\\beval\\b${SAME_CMD_SEP}\\\$\\([ \t]*(curl|wget)[ \t]"; then
+    emit_deny "curl/wget の出力をプロセス置換・コマンド置換経由でシェルに渡して実行するパターンは禁止されています。"
+fi
+
+# git reset --hard / git clean -f / force push(permissions.denyは先頭一致のみのため、
+# `git -C <path> ...` や引数順序違い(-df, -fd等)、sudo経由をここで補完する)
+# ※ キーワード間は固定のフラグ文法ではなく「; & | 改行を含まない任意の文字列」として許容する。
+#   フラグを `-{1,2}[A-Za-z0-9_.-]+` のような厳密な文法で解析しようとすると、
+#   `--git-dir=.git`(=区切り)や `-C "my repo"`(スペースを含むクォート値)のような
+#   実際のgitが受け付ける書き方を想定から外してしまい、検知をすり抜けられる
+#   (自動セキュリティレビューで指摘・実機検証で確認済み)。
+#   同一コマンド区切り内での語順だけを見ることで、フラグの文法に依存せず検知する。
+GIT_START='(^|\s|;|&&|\||\(|`)git\b'
+if match "${GIT_START}${SAME_CMD_SEP}\breset\b${SAME_CMD_SEP}--hard\b"; then
+    emit_deny "git reset --hard は禁止されています。未コミットの変更が失われる可能性があります。"
+fi
+if match "${GIT_START}${SAME_CMD_SEP}\bclean\b${SAME_CMD_SEP}(-[a-zA-Z]*f[a-zA-Z]*(\s|$)|--force\b)"; then
+    emit_deny "git clean -f(未追跡ファイルの強制削除)は禁止されています。"
+fi
+if match "${GIT_START}${SAME_CMD_SEP}\bpush\b${SAME_CMD_SEP}(\s(-f|--force)(\s|$)|\s\+[^ \t;&|[:cntrl:]]+)"; then
+    emit_deny "git push --force(force push)は禁止されています。リモートの履歴を書き換える危険があります。"
+fi
+
+# docker compose の破壊的操作(ボリューム削除・強制削除。同一コマンド区切り内での語順のみを見る)
+if match "(^|\s|;|&&|\||\(|\`)docker\s+compose${SAME_CMD_SEP}\b(down|rm)\b${SAME_CMD_SEP}(-v\b|--volumes\b|-f\b|--force\b)"; then
+    emit_deny "docker compose down/rm へのボリューム削除・強制オプションは禁止されています。データが失われる可能性があります。"
+fi
+
 # chmod -R 777 系(旧 block-chmod-777)
-FULL_PERM='(^|[^0-9])0?777([^0-9]|$)|(^|[^a-zA-Z])(a|ugo)[+=]rwx([^a-zA-Z]|$)'
-RECURSIVE_FLAG='(^|\s)-[a-zA-Z]*R[a-zA-Z]*(\s|$)|--recursive'
-if match 'chmod' && match "$RECURSIVE_FLAG" && match "$FULL_PERM"; then
+# ※ chmod・再帰フラグ・パーミッションの3つを独立したmatch呼び出しのANDで見ると、
+#   複数行コミットメッセージ等でこれらの語が別々の行に散らばっただけでも誤検出する
+#   (git系パターンと同じ原因。実機検証で確認済み)。1つのmatch呼び出しに結合し、
+#   同一行内での語順(両方の順序)を要求することで誤検出を防ぐ。
+#   ※ 末尾の境界は `(\s|$)` のような「消費する」形だと、連結時に手前のグループが
+#   区切り文字を欲張って消費してしまい、後続グループの先頭境界(`[^0-9]`等)が
+#   判定対象の文字を失ってすり抜ける(実機検証で確認済み)。消費しない `\b` に統一する。
+FULL_PERM='\b0?777\b|\b(a|ugo)[+=]rwx\b'
+RECURSIVE_FLAG='(^|\s)-[a-zA-Z]*R[a-zA-Z]*\b|--recursive\b'
+if match "chmod${SAME_CMD_SEP}(${RECURSIVE_FLAG})${SAME_CMD_SEP}(${FULL_PERM})" || match "chmod${SAME_CMD_SEP}(${FULL_PERM})${SAME_CMD_SEP}(${RECURSIVE_FLAG})"; then
     emit_deny "777 等の全権限をディレクトリ配下に再帰的に付与するコマンドは禁止されています。"
 fi
-if match 'find\s.*-exec\s+chmod\s' && match "$FULL_PERM"; then
+if match "find\s.*-exec\s+chmod\s${SAME_CMD_SEP}(${FULL_PERM})"; then
     emit_deny "find でファイルを走査しながら 777 等の全権限を付与するコマンドは禁止されています。"
 fi
 
