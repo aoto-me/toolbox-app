@@ -24,6 +24,11 @@ TOOL=$(printf '%s' "$INPUT" | python3 -c "import json,sys; print(json.load(sys.s
 CMD=$(printf '%s' "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); ti=d.get('tool_input') or {}; print(ti.get('command', d.get('command','')))" 2>/dev/null)
 CWD=$(printf '%s' "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('cwd','/workspace'))" 2>/dev/null)
 
+# バックスラッシュ+改行(シェルの行継続)はスペースに正規化してから判定する。
+# `git reset \`<改行>`  --hard` のように改行で分断するだけで、改行をまたがない
+# 前提の正規表現(本スクリプト内の全パターン共通)をすり抜けられるため(実機検証で確認済み)。
+CMD="${CMD//$'\\\n'/ }"
+
 # 目印: このフック由来の deny/ask であることを一目で分かるよう、理由文の先頭に必ず付ける。
 # Claude Code のデフォルト確認と区別するため。
 GUARD_MARK='🪝 [bash-guard] '
