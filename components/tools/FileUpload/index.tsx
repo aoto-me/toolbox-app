@@ -255,7 +255,6 @@ export default function FileUpload() {
             e.target.value = '';
           }}
           ref={inputRef}
-          style={{ display: 'none' }}
           type="file"
         />
         {isLimitReached ? (

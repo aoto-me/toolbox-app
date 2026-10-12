@@ -40,6 +40,7 @@ app/
   global-error.tsx               ← グローバルエラーページ（Sentry統合）
   not-found.tsx                  ← 404ページ
   robots.ts                      ← robots.txt
+  styles/                        ← 全コンポーネント共通のSCSS基盤（colors・variables・mixins等）
 components/
   tools/
     PriceCalculator/
