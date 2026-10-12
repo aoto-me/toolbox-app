@@ -225,9 +225,9 @@ Claude Code 2.1.201時点のものだった。2026-10-12、Claude Code 2.1.212�
 ## 保守メモ(今後のために)
 
 - **Bash の block/confirm ルールを足すときは `bash-guard.sh` に `emit_deny`/`emit_ask` で追記する。**
-  個別フックを新規作成して `matcher:"Bash"` に登録しても発火しないので厳禁。
-- `matcher:"Bash"` は使わない。matcher なし + `tool_name` 判定が唯一効く経路。
-- 将来 Anthropic が問題1のバグを直したら、`matcher:"Bash"` グループを復活させないこと(bash-guard と二重発火する)。
+  2026-10-12 以降は `matcher:"Bash"` 自体は正常発火するが、1ファイルに集約する方針は
+  保守性のため維持している(複数ファイルに分散させると見落としやすい)。個別フックを
+  新規作成して `matcher:"Bash"` に登録すること自体は(発火はするが)この集約方針に反するので避ける。
 - WebFetch の許可は、フック(`allow` 返却)の代わりに `permissions.allow` の `WebFetch(domain:...)` でも制御可能。
 - 動的な分岐ロジックが不要な単純な確認は、`bash-guard.sh` の `emit_ask` に加えて
   `.claude/settings.json` の `permissions.ask` にも同じルールを書く(二重化)。
@@ -235,6 +235,20 @@ Claude Code 2.1.201時点のものだった。2026-10-12、Claude Code 2.1.212�
   マッチしないため、どちらか一方だけでは不十分
   (詳細は `.claude/rules/hooks.md`「ネイティブ `permissions.ask` との使い分け」)。
 - 関連ルール: `.claude/rules/permissions-deny.md`(deny 構文の穴)。
+
+## 既知の限界(正規表現ベース検知では防ぎきれないパターン・2026-10-12 診断で判明)
+
+`bash-guard.sh` は正規表現によるコマンド文字列マッチのため、原理的に以下は防げない。
+どちらも唯一の防御ではなく `security-guidance` プラグイン(commit/push/Stop時の非同期LLMレビュー)
+が最後の安全網になる設計(`.claude/rules/hooks.md` 参照)。
+
+- **インタープリタ経由の迂回**: `settings.local.json` で `Bash(python3 *)` / `Bash(node *)` が
+  無条件 allow のため、`python3 -c "open('.'+'env').read()"` のような文字列分割・結合で
+  `.env` 等のキーワードマッチそのものを回避できる可能性がある。
+- **ダウンロードと実行を別ターンに分ける2段階攻撃**: `curl file.sh | bash` のような直結は
+  検知できるが、1回目の Bash 呼び出しで `curl -o /tmp/x.sh ...`(ダウンロードのみ)、
+  2回目の別の Bash 呼び出しで `bash /tmp/x.sh`(実行のみ)のように分割されると、
+  どちらの単発コマンドにも `curl`+`bash` が同時に現れないため検知できない。
 
 ## 複数キーワードを1つの正規表現に結合する際のハマりどころ(2026-10 調査)
 
