@@ -1,13 +1,18 @@
 #!/bin/bash
 # ============================================================================
-# bash-guard.sh — matcher なし PreToolUse ディスパッチャ(本実装)
+# bash-guard.sh — Bash 用 PreToolUse ディスパッチャ(本実装)
 # ----------------------------------------------------------------------------
-# 旧 .claude/hooks/{block-*,confirm-*}.sh(matcher:"Bash" 登録)を1本に集約したもの。
-# 2つの Claude Code 由来の問題を同時に回避する:
-#   (1) matcher:"Bash" が発火しない既知バグ
-#       → matcher なし(全ツール対象)で登録し、中で tool_name=="Bash" を自前判定。
-#         (session-7/8 で「matcher なしは Bash で発火」「deny/ask とも尊重」を実証)
-#   (2) /dev/tty 依存が v2.1.139 以降 使用不可(公式仕様)
+# 旧 .claude/hooks/{block-*,confirm-*}.sh を1本に集約したもの。
+# 2026-07時点では PreToolUse の matcher:"Bash" が発火しない既知バグがあり、
+# 回避策として matcher なし(全ツール対象)で登録し tool_name=="Bash" を自前判定
+# していたが、2026-10-12 に Claude Code 2.1.212 で再検証したところ matcher:"Bash"
+# が正しく発火することを実機確認した(発火スモーク・実際のdenyの両方で確認済み)。
+# settings.json 側は matcher:"Bash" に戻したが、将来また同じバグが再発した場合に
+# すぐ気付けるよう、下の tool_name 判定は defense-in-depth として残している
+# (matcher が正しく機能していれば常に "Bash" になるはずの冗長チェック)。
+# 詳しい経緯は .claude/hooks/README.md。
+#
+# もう1つの既知の制約: /dev/tty 依存が v2.1.139 以降 使用不可(公式仕様、今も有効)。
 #       → 確認/ブロックは JSON プロトコル(permissionDecision)で行う。
 #
 # 入力: tool_name はトップレベル、command は tool_input.command(検証で確定)。
@@ -18,6 +23,8 @@
 # ============================================================================
 INPUT=$(cat)
 
+# matcher:"Bash" 経由で呼ばれる限り常に "Bash" になるはずの冗長チェック
+# (defense-in-depth。matcher が再び機能しなくなった場合の早期検知用)。
 TOOL=$(printf '%s' "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('tool_name',''))" 2>/dev/null)
 [ "$TOOL" != "Bash" ] && exit 0
 

@@ -5,11 +5,11 @@
 
 ## 現在の構成(3ファイル)
 
-| ファイル              | イベント / 登録               | 役割                                                                               |
-| --------------------- | ----------------------------- | ---------------------------------------------------------------------------------- |
-| `bash-guard.sh`       | PreToolUse / **matcher なし** | Bash の block(deny)/confirm(ask)を一手に処理。旧 `block-*`・`confirm-*` 11個を集約 |
-| `confirm-webfetch.sh` | PreToolUse / `WebFetch`       | 外部ドメイン制御。信頼→allow / 未登録→ask                                          |
-| `post-edit-lint.sh`   | PostToolUse / `Write\|Edit`   | Edit/Write 後の ESLint 整形                                                        |
+| ファイル              | イベント / 登録                | 役割                                                                                                                                                                            |
+| --------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bash-guard.sh`       | PreToolUse / `matcher: "Bash"` | Bash の block(deny)/confirm(ask)を一手に処理。旧 `block-*`・`confirm-*` 11個を集約(2026-10-12、matcher:"Bash"バグ解消を確認したため matcher なし運用から復帰。下記「追記」参照) |
+| `confirm-webfetch.sh` | PreToolUse / `WebFetch`        | 外部ドメイン制御。信頼→allow / 未登録→ask                                                                                                                                       |
+| `post-edit-lint.sh`   | PostToolUse / `Write\|Edit`    | Edit/Write 後の ESLint 整形                                                                                                                                                     |
 
 ## 健全性チェック(退行の早期警告)
 
@@ -30,7 +30,31 @@
 
 ---
 
-以下は、この構成に至った調査と解決の全記録(ポストモーテム)。
+## 追記(2026-10-12): `matcher:"Bash"` バグが解消していることを確認
+
+下記のポストモーテムで判明した「`PreToolUse` の `matcher:"Bash"` が発火しない」バグは、
+Claude Code 2.1.201時点のものだった。2026-10-12、Claude Code 2.1.212で以下を実機確認した:
+
+1. `.claude/settings.json` の `bash-guard.sh` 登録を matcher なしから `matcher:"Bash"` に変更
+2. 発火スモーク(`echo __hookcheck__`)を実行 → 🪝 [bash-guard] のダミー拒否が正しく表示された
+3. 実際の deny パターン(`rm` 禁止)も正しく発火することを確認
+4. 既存のロジック単体テスト(`tests/run-all.sh`)63件も変更なしで全PASS
+
+セッション再起動なし(2.1.212のまま)で確認できたため、2.1.201→2.1.212の間のどこかで
+修正されたと推測される(次回アップデート後の2.1.296では未検証)。
+
+**対応**: `settings.json` を `matcher:"Bash"` に戻し、本来の素直な形に簡略化した。
+`bash-guard.sh` 内の `tool_name=="Bash"` 判定は、matcher が将来また機能しなくなった場合に
+早期検知できるよう defense-in-depth として残している(detailed rationale はスクリプト内コメント参照)。
+`bash-guard.sh` を1ファイルに集約する方針自体は維持(保守性のため、matcher の発火問題とは別の判断)。
+
+**今後のために**: この再発を見逃さないよう、`echo __hookcheck__` の発火スモークは
+引き続き健全性チェックの中核に据えている。もし将来また `matcher:"Bash"` が機能しなくなったら、
+このREADMEの「元のフック → 対応結果」の`bash-guard.sh`登録を matcher なしに戻すこと。
+
+---
+
+以下は、この構成に至った調査と解決の全記録(ポストモーテム。2026-07時点の2.1.201での調査)。
 
 ---
 
