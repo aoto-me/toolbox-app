@@ -15,6 +15,13 @@
       "when": 1791756885430,
       "tag": "0001_equal_caretaker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792209818621,
+      "tag": "0002_illegal_daredevil",
+      "breakpoints": true
     }
   ]
 }

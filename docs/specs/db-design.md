@@ -14,7 +14,7 @@ erDiagram
   memos {
     serial id PK
     integer user_id FK,UK "NOT NULL"
-    varchar_10000 content "NOT NULL, DEFAULT ''"
+    varchar_30000 content "NOT NULL, DEFAULT ''"
     timestamp_tz created_at "DEFAULT NOW()"
     timestamp_tz updated_at "DEFAULT NOW()"
   }
@@ -50,7 +50,7 @@ erDiagram
 | ---------- | ------------------------ | ------------------------------------------------ | ------------------------------------------ |
 | id         | serial                   | PRIMARY KEY                                      |                                            |
 | user_id    | integer                  | NOT NULL, UNIQUE, FK→users.id, ON DELETE CASCADE | UNIQUE制約によりユーザー1人につき1レコード |
-| content    | varchar(10000)           | NOT NULL, DEFAULT ''                             | メモ本文。上限10000文字                    |
+| content    | varchar(30000)           | NOT NULL, DEFAULT ''                             | メモ本文。上限30000文字                    |
 | created_at | timestamp with time zone | NOT NULL, DEFAULT NOW()                          |                                            |
 | updated_at | timestamp with time zone | NOT NULL, DEFAULT NOW()                          |                                            |
 
